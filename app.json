@@ -1,0 +1,12 @@
+{
+  "name": "find_my_coffee_mobile",
+  "displayName": "find_my_coffee_mobile",
+  "expo": {
+    "name": "find_my_coffee_mobile",
+    "slug": "find_my_coffee_mobile",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
