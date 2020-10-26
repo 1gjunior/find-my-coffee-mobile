@@ -1,12 +1,79 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import Establishment from './src/components/Establishment';
+
+import EstablishmentService from './src/services/establishment_service';
+import NearstCoffees from './src/components/NearstCoffees';
 
 export default function App() {
+  const [latitude, setLatitude] = useState(0);
+  const [longitude, setLongitude] = useState(0);
+  const [locations, setLocations] = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Ative as permissões de uso do GPS para acessar o APP');
+      } else {
+        let location = await Location.getCurrentPositionAsync({});
+        setLatitude(location.coords.latitude);
+        setLongitude(location.coords.longitude);
+      }
+    })();
+
+    loadCoffees();
+  }, []);
+
+  async function loadCoffees() {
+    try {
+      const response = await EstablishmentService.index(latitude, longitude);
+      setLocations(response.data.results);
+    } catch (error) {
+      setLocations([]);
+    }
+  }
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <NearstCoffees latitude={latitude} longitude={longitude} />
+      {selected && <Establishment place={selected} />}
+
+      <MapView
+        style={styles.map}
+        region={{
+          latitude: latitude,
+          longitude: longitude,
+          latitudeDelta: 0.03,
+          longitudeDelta: 0.03,
+        }}
+      >
+        <Marker
+          title='Seu Local'
+          icon={require('./src/images/my-location-pin-1.png')}
+          coordinate={{
+            latitude: latitude,
+            longitude: longitude,
+          }}
+        />
+        {locations.map((item) => {
+          return (
+            <Marker
+              key={item.place_id}
+              title={item.name}
+              icon={require('./src/images/coffee-big-pin.png')}
+              coordinate={{
+                latitude: item.geometry.location.lat,
+                longitude: item.geometry.location.lng,
+              }}
+              onPress={() => setSelected(item)}
+            />
+          );
+        })}
+      </MapView>
     </View>
   );
 }
@@ -14,8 +81,10 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    zIndex: 0,
+  },
+  map: {
+    height: '100%',
+    width: '100%',
   },
 });
